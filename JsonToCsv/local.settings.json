@@ -1,0 +1,14 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "TenantId": "1da598ac-0e6a-4c0e-ba77-cdbfcb83348f",
+    "ClientId": "0b1ee107-e62b-4857-a851-a9c0d115cac7",
+    "ClientSecret": "EmD8Q~z-q_n-i1a7C0KwY9GPYJj1qaJz6OmujczO",
+    "KeyVaultUri": "https://kv-bluecorp-app-dev.vault.azure.net/",
+    "SFTPHostSecretName": "3PL-SFTP-host",
+    "SFTPUsernameSecretName": "3PL-SFTP-username",
+    "SFTPPasswordSecretName": "3PL-SFTP-password",
+    "BlobConnStringSecretName": "blob-connection-string",
+    "BlobContainerNameSecretName": "blob-container-name"
+  }
+}
