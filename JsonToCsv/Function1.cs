@@ -7,17 +7,8 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using System.Data;
-using SuperConvert.Extensions;
 using System.Text;
-using System.Linq;
-using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Blob;
-using Microsoft.AspNetCore.Hosting.Server;
-using System.Web;
 using System.Collections.Generic;
-using Newtonsoft.Json.Linq;
-using System.Globalization;
 using static JsonToCsv.Class1;
 using Azure.Storage.Blobs;
 
@@ -27,14 +18,13 @@ namespace JsonToCsv
     {
         [FunctionName("D365OrderForShipment")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequest req, //, "get"
             ILogger log)
         {
             log.LogInformation("C# HTTP BlueCorp trigger function processed a request.");
 
             try
             {
-
                 string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
 
                 if (string.IsNullOrEmpty(requestBody))
@@ -91,17 +81,21 @@ namespace JsonToCsv
                 DateTime nzDateTime = DateTime.UtcNow.Add(nzTimeZone.GetUtcOffset(utcOffset));
                 string now = $"BC_D365OrderToShip_{controlNumber}_{nzDateTime:yyyyMMdd_HHmmss.fff}";
                 string csvFileName = $"/bluecorp-incoming/{now}.csv";
-                
+
                 //Upload the CSV to the SFTP server
                 UploadCsvToSftp(csvOutput.ToString(), csvFileName);
 
-                string connectionString = "DefaultEndpointsProtocol=https;AccountName=stbluecorpappdev;AccountKey=RfEP8dnoWIVnSdPUCka/GvV9uxk/7s75Fw0CFl3LpaOzhWOUWDHh62p4/YXGZyzJ5npsRuZXmNGt+AStkVWxKw==;EndpointSuffix=core.windows.net";
-                string containerName = "bluecorp-incoming"; // Replace with your container name
+                string blobConnStringSecretName = Environment.GetEnvironmentVariable("BlobConnStringSecretName");
+                string blobContainerNameSecretName = Environment.GetEnvironmentVariable("BlobContainerNameSecretName");
+
+                var secretClient = GetSecretClient();
+                string blobConnString = secretClient.GetSecret(blobConnStringSecretName).Value.Value.ToString();
+                string blobContainerName = secretClient.GetSecret(blobContainerNameSecretName).Value.Value.ToString();
                 string blobName = $"{now}.json"; // Unique file name
 
                 // Create the Blob client
-                BlobServiceClient blobServiceClient = new BlobServiceClient(connectionString);
-                BlobContainerClient containerClient = blobServiceClient.GetBlobContainerClient(containerName);
+                BlobServiceClient blobServiceClient = new BlobServiceClient(blobConnString);
+                BlobContainerClient containerClient = blobServiceClient.GetBlobContainerClient(blobContainerName);
 
                 // Ensure the container exists
                 containerClient.CreateIfNotExistsAsync();
