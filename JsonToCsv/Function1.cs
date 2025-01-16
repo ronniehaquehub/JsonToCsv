@@ -29,7 +29,7 @@ namespace JsonToCsv
     {
         [FunctionName("D365OrderForShipment")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequest req,
             ILogger log)
         {
             log.LogInformation("C# HTTP BlueCorp trigger function processed a request.");
