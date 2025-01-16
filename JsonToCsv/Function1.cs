@@ -7,10 +7,21 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using System.Data;
 using System.Text;
+using System.Linq;
+using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Blob;
+using Microsoft.AspNetCore.Hosting.Server;
+using System.Web;
 using System.Collections.Generic;
+using Newtonsoft.Json.Linq;
+using System.Globalization;
 using static JsonToCsv.Class1;
 using Azure.Storage.Blobs;
+using Azure.Identity;
+using Azure.Security.KeyVault.Secrets;
+using System.Configuration;
 
 namespace JsonToCsv
 {
@@ -18,7 +29,7 @@ namespace JsonToCsv
     {
         [FunctionName("D365OrderForShipment")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequest req, //, "get"
+            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
             ILogger log)
         {
             log.LogInformation("C# HTTP BlueCorp trigger function processed a request.");
@@ -79,9 +90,9 @@ namespace JsonToCsv
                 var nzTimeZone = TimeZoneInfo.FindSystemTimeZoneById("New Zealand Standard Time");
                 var utcOffset = new DateTimeOffset(DateTime.UtcNow, TimeSpan.Zero);
                 DateTime nzDateTime = DateTime.UtcNow.Add(nzTimeZone.GetUtcOffset(utcOffset));
-                string now = $"BC_D365OrderToShip_{controlNumber}_{nzDateTime:yyyyMMdd_HHmmss.fff}";
-                string csvFileName = $"/bluecorp-incoming/{now}.csv";
-
+                string strFileName = $"BC_D365OrderToShip_{nzDateTime:yyyyMMdd_HHmmss.fff}_{controlNumber}";
+                string csvFileName = $"/bluecorp-incoming/{strFileName}.csv";
+                
                 //Upload the CSV to the SFTP server
                 UploadCsvToSftp(csvOutput.ToString(), csvFileName);
 
@@ -91,7 +102,7 @@ namespace JsonToCsv
                 var secretClient = GetSecretClient();
                 string blobConnString = secretClient.GetSecret(blobConnStringSecretName).Value.Value.ToString();
                 string blobContainerName = secretClient.GetSecret(blobContainerNameSecretName).Value.Value.ToString();
-                string blobName = $"{now}.json"; // Unique file name
+                string blobName = $"{strFileName}.json"; // Unique file name
 
                 // Create the Blob client
                 BlobServiceClient blobServiceClient = new BlobServiceClient(blobConnString);
